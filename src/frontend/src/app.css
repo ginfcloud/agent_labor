@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #475569;
+}
+
+body {
+  @apply bg-slate-900 text-slate-100 min-h-screen;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply bg-primary-600 hover:bg-primary-700 text-white;
+}
+
+.btn-secondary {
+  @apply bg-slate-700 hover:bg-slate-600 text-white;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white;
+}
+
+.card {
+  @apply bg-slate-800 border border-slate-700 rounded-xl p-6;
+}
+
+.input {
+  @apply w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+}
+
+.label {
+  @apply block text-sm font-medium text-slate-300 mb-1;
+}
+
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-open {
+  @apply bg-green-900 text-green-300;
+}
+
+.badge-cancelled {
+  @apply bg-red-900 text-red-300;
+}
+
+.badge-done {
+  @apply bg-blue-900 text-blue-300;
+}
+
+.badge-pending {
+  @apply bg-yellow-900 text-yellow-300;
+}
+
+.badge-overdue {
+  @apply bg-orange-900 text-orange-300;
+}
+
+.badge-approved {
+  @apply bg-emerald-900 text-emerald-300;
+}
+
+.badge-cheated {
+  @apply bg-red-900 text-red-300;
+}
+
+.truncate-address {
+  @apply font-mono text-sm;
+}
