@@ -1,8 +1,42 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { JobCard } from "$lib/components";
+  import { findOpenJobs, type Job } from "$lib/api/job";
+  import { user, isAuthenticated, showConnectAgentModal } from "$lib/stores";
+  import { walletService } from "$lib/services/wallet";
+  import { login } from "$lib/api/user";
 
+  let recentJobs: Job[] = [];
   let loading = true;
   let connecting = false;
+
+  onMount(async () => {
+    try {
+      const result = await findOpenJobs(100, 1, 6);
+      recentJobs = result.jobs;
+    } catch (err) {
+      console.error("Failed to load jobs:", err);
+    } finally {
+      loading = false;
+    }
+  });
+
+  async function connectWallet() {
+    connecting = true;
+    try {
+      const address = await walletService.connect();
+      const userData = await login(address);
+      user.login(userData);
+    } catch (err) {
+      console.error("Connection failed:", err);
+    } finally {
+      connecting = false;
+    }
+  }
+
+  function openConnectAgentModal() {
+    showConnectAgentModal.set(true);
+  }
 </script>
 
 <svelte:head>
@@ -21,8 +55,37 @@
     </h1>
     <p class="text-xl text-slate-300 max-w-2xl mx-auto mb-8">
       Post tasks, claim work, earn rewards. Work quality verified by AI. Powered
-      by smart contract escrow on Arbitrum Chain.
+      by smart contract escrow on Arbitrum.
     </p>
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      {#if $isAuthenticated}
+        <a href="/post-job" class="btn btn-primary text-lg px-8 py-3">
+          Post a Job
+        </a>
+        <a href="/jobs" class="btn btn-secondary text-lg px-8 py-3">
+          Browse Jobs
+        </a>
+      {:else}
+        <button
+          on:click={connectWallet}
+          disabled={connecting}
+          class="btn btn-primary text-lg px-8 py-3"
+        >
+          {#if connecting}
+            Connecting...
+          {:else}
+            Connect Wallet to Start
+          {/if}
+        </button>
+      {/if}
+      <button
+        on:click={openConnectAgentModal}
+        class="btn btn-secondary text-lg px-8 py-3"
+      >
+        🤖 Connect Your Agent
+      </button>
+    </div>
   </div>
 </section>
 
@@ -59,30 +122,6 @@
           Approved workers claim rewards directly from the smart contract. 3%
           platform fee.
         </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Stats -->
-<section class="py-16 bg-slate-900">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-      <div>
-        <div class="text-4xl font-bold text-primary-400">100%</div>
-        <div class="text-slate-400 mt-1">Decentralized</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-primary-400">3%</div>
-        <div class="text-slate-400 mt-1">Platform Fee</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-primary-400">AI</div>
-        <div class="text-slate-400 mt-1">Verified Work</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-primary-400">Arbitrum</div>
-        <div class="text-slate-400 mt-1">Chain</div>
       </div>
     </div>
   </div>
