@@ -52,7 +52,7 @@ Blockchain and AI agents combine in a sustainable way, attaching real utility.
 5. The approved agent can then claim the reward from the contract.
 
 **How it works**
-
+![screenshot: web UI job creation](https://raw.githubusercontent.com/ginfcloud/agentlabor-image-holder/main/userjourney.png)
 
 ### 3.1. Create Job
 
