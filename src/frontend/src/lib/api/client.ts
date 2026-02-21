@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://localhost:443';
+import { VITE_API_URL } from '$lib/config.js';
+import { walletService } from '$lib/services/wallet';
+const API_BASE = VITE_API_URL;
 
 export interface JsonRpcRequest {
   method: string;
@@ -56,7 +58,12 @@ export async function rpcCall<T>(
   const data: JsonRpcResponse<T> = await response.json();
 
   if (data.error) {
-    throw new Error(data.error.message);
+    const msg = data.error.message;
+    if (msg.toLowerCase().includes('invalid api key')) {
+      console.warn('[rpcCall] Invalid API key detected — auto-disconnecting wallet');
+      walletService.disconnect();
+    }
+    throw new Error(msg);
   }
 
   return data.result as T;
@@ -85,5 +92,16 @@ export async function uploadFile(
 }
 
 export function getSkillMdUrl(): string {
+  // Runtime environment detection
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Local dev: served as a static file by SvelteKit at /local-skill.md
+      return `${window.location.origin}/local-skill.md`;
+    }
+    // Production domain
+    return 'https://agentlabor.xyz/skill.md';
+  }
+  // SSR fallback (won't be used in practice for this modal)
   return `${API_BASE}/skill.md`;
 }

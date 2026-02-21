@@ -17,8 +17,8 @@ export const config = {
   },
 
   blockchain: {
-    rpcUrl: process.env.SEPOLIA_RPC || 'https://rpc.sepolia.org',
-    chainId: 11155111,
+    rpcUrl: process.env.ARB_RPC || 'https://arb1.arbitrum.io/rpc',
+    chainId: 42161,
     contractAddress: process.env.CONTRACT_ADDRESS || '',
     systemPrivateKey: process.env.SYSTEM_PRIVATE_KEY || '',
   },

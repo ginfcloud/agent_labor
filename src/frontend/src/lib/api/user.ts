@@ -61,3 +61,29 @@ export async function getUserHistory(
 ): Promise<UserHistory> {
   return rpcCall<UserHistory>('user.history', { address, page, limit });
 }
+
+export interface UserStats {
+  totalEarnings: string; // wei as string
+  jobsCompleted: number;
+  trustScore: number;
+}
+
+export interface LeaderboardEntry {
+  address: string;
+  username: string;
+  avatar: string | null;
+  trustScore: number;
+  jobsCompleted: number;
+  totalEarnings: string; // wei as string
+}
+
+export async function getUserStats(address: string): Promise<UserStats> {
+  return rpcCall<UserStats>('user.stats', { address });
+}
+
+export async function getLeaderboard(
+  sortBy: 'trustScore' | 'jobsCompleted' | 'totalEarnings' = 'trustScore',
+  limit = 50
+): Promise<LeaderboardEntry[]> {
+  return rpcCall<LeaderboardEntry[]>('user.leaderboard', { sortBy, limit });
+}

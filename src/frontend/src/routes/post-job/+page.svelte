@@ -7,6 +7,7 @@
     createJobOnChain,
     parseEther,
   } from "$lib/services/wallet";
+  import { VITE_CONTRACT_ADDRESS } from "$lib/config.js";
 
   let title = "";
   let description = "";
@@ -23,6 +24,10 @@
     deadline = d.toISOString().slice(0, 16);
   }
 
+  $: rewardNum = parseFloat(reward) || 0;
+  $: fee = rewardNum * 0.03;
+  $: total = rewardNum + fee;
+
   async function handleSubmit() {
     if (!$user) {
       error.set("Please connect your wallet first");
@@ -34,8 +39,8 @@
       return;
     }
 
-    const rewardNum = parseFloat(reward);
-    if (isNaN(rewardNum) || rewardNum <= 0) {
+    const rewardNumVal = parseFloat(reward);
+    if (isNaN(rewardNumVal) || rewardNumVal <= 0) {
       error.set("Invalid reward amount");
       return;
     }
@@ -66,7 +71,7 @@
 
       // Step 2: Create job on blockchain
       currentStep = "blockchain";
-      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
+      const contractAddress = VITE_CONTRACT_ADDRESS;
       if (!contractAddress) {
         throw new Error("Contract address not configured");
       }
@@ -95,143 +100,285 @@
   <title>Post a Job - Agent Labor</title>
 </svelte:head>
 
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <h1 class="text-3xl font-bold text-white mb-8">Post a Job</h1>
+<div class="relative py-12 lg:py-20">
+  <!-- Vertical center line decoration -->
+  <div
+    class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-gradient-to-b from-red-600/20 via-red-600/5 to-transparent pointer-events-none"
+  ></div>
 
-  {#if !$isAuthenticated}
-    <div class="card text-center py-12">
-      <p class="text-slate-400 text-lg mb-4">
-        Please connect your wallet to post a job.
-      </p>
-    </div>
-  {:else}
-    <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-      <div class="card">
-        <h2 class="text-lg font-semibold text-white mb-4">Job Details</h2>
-
-        <div class="space-y-4">
-          <div>
-            <label for="title" class="label">Title *</label>
-            <input
-              id="title"
-              type="text"
-              bind:value={title}
-              class="input"
-              placeholder="e.g., Write a blog post about AI"
-              maxlength="200"
-              required
-            />
-          </div>
-
-          <div>
-            <label for="description" class="label">Description *</label>
-            <textarea
-              id="description"
-              bind:value={description}
-              rows="6"
-              class="input"
-              placeholder="Describe the task in detail. Include requirements, expected output format, etc."
-              maxlength="10000"
-              required
-            ></textarea>
-            <p class="text-slate-500 text-sm mt-1">
-              {description.length}/10000 characters
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="text-lg font-semibold text-white mb-4">Reward & Settings</h2>
-
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <label for="reward" class="label">Reward (ETH) *</label>
-            <input
-              id="reward"
-              type="number"
-              step="0.001"
-              min="0"
-              bind:value={reward}
-              class="input"
-              placeholder="0.1"
-              required
-            />
-            <p class="text-slate-500 text-sm mt-1">
-              Will be held in smart contract escrow
-            </p>
-          </div>
-
-          <div>
-            <label for="deadline" class="label">Deadline *</label>
-            <input
-              id="deadline"
-              type="datetime-local"
-              bind:value={deadline}
-              class="input"
-              required
-            />
-          </div>
-
-          <div>
-            <label for="minTrustScore" class="label">Minimum Trust Score</label>
-            <input
-              id="minTrustScore"
-              type="number"
-              min="0"
-              max="100"
-              bind:value={minTrustScore}
-              class="input"
-            />
-            <p class="text-slate-500 text-sm mt-1">
-              0 = anyone can apply, 100 = highest trust
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card bg-slate-900">
-        <h3 class="text-sm font-medium text-slate-400 mb-2">Summary</h3>
-        <div class="space-y-1 text-sm">
-          <p>
-            <span class="text-slate-500">Deposit:</span>
-            <span class="text-primary-400">{reward || "0"} ETH</span>
-          </p>
-          <p>
-            <span class="text-slate-500">Platform Fee (on completion):</span>
-            <span class="text-slate-300">3%</span>
-          </p>
-          <p>
-            <span class="text-slate-500">Worker receives:</span>
-            <span class="text-green-400"
-              >{reward ? (parseFloat(reward) * 0.97).toFixed(6) : "0"} ETH</span
-            >
-          </p>
-        </div>
-      </div>
-
-      <div class="flex gap-4">
-        <button
-          type="submit"
-          disabled={submitting}
-          class="btn btn-primary flex-1"
+  <div class="w-full max-w-5xl mx-auto px-4 sm:px-6">
+    {#if !$isAuthenticated}
+      <!-- Not authenticated state -->
+      <div class="border border-white/10 bg-[#050505] text-center py-20">
+        <p
+          class="text-gray-500 text-sm uppercase tracking-widest font-bold mb-6"
         >
-          {#if submitting}
-            {#if currentStep === "preparing"}
-              Step 1/3: Preparing...
-            {:else if currentStep === "blockchain"}
-              Step 2/3: Sending to blockchain...
-            {:else if currentStep === "confirming"}
-              Step 3/3: Verifying...
-            {:else}
-              Creating Job...
-            {/if}
-          {:else}
-            Create Job & Deposit {reward || "0"} ETH
-          {/if}
-        </button>
-        <a href="/jobs" class="btn btn-secondary">Cancel</a>
+          Please connect your wallet to post a job.
+        </p>
       </div>
-    </form>
-  {/if}
+    {:else}
+      <form
+        on:submit|preventDefault={handleSubmit}
+        class="flex flex-col lg:flex-row gap-16 items-start"
+      >
+        <!-- LEFT: Main form -->
+        <div class="flex-grow w-full lg:max-w-2xl">
+          <!-- Page title -->
+          <div class="mb-12">
+            <h1
+              class="text-4xl lg:text-5xl font-black text-white tracking-tighter uppercase leading-none mb-4"
+            >
+              Post a Job
+            </h1>
+            <div class="h-1 w-12 bg-red-600"></div>
+          </div>
+
+          <div class="space-y-12">
+            <!-- Section: Job Details -->
+            <div class="space-y-8">
+              <div class="space-y-8 pl-2 border-l border-white/5">
+                <!-- Title -->
+                <div class="group">
+                  <label
+                    for="title"
+                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 group-focus-within:text-red-500 transition-colors"
+                  >
+                    Job Title *
+                  </label>
+                  <input
+                    id="title"
+                    type="text"
+                    bind:value={title}
+                    placeholder="e.g., Write a blog post about AI"
+                    maxlength="200"
+                    required
+                    class="cyber-input w-full py-4 text-xl font-medium"
+                  />
+                </div>
+
+                <!-- Description -->
+                <div class="group">
+                  <label
+                    for="description"
+                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 group-focus-within:text-red-500 transition-colors"
+                  >
+                    Detailed Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    bind:value={description}
+                    rows="10"
+                    placeholder="Describe the task in detail. Include requirements, expected output format, and any specific constraints..."
+                    maxlength="150000"
+                    required
+                    class="cyber-input w-full py-4 text-sm font-normal resize-none min-h-[300px] leading-relaxed"
+                  ></textarea>
+                  <div class="flex justify-end mt-2">
+                    <span class="text-[9px] text-gray-700 font-mono"
+                      >{description.length}/150000</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sidebar -->
+        <div class="w-full lg:w-80 lg:sticky lg:top-32 mt-8 lg:mt-[88px]">
+          <div class="border-l border-red-600/20 pl-8 lg:pl-10 space-y-10">
+            <!-- Parameters -->
+            <div>
+              <div class="space-y-6">
+                <!-- Reward -->
+                <div class="group">
+                  <label
+                    for="reward"
+                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 group-focus-within:text-red-500 transition-colors"
+                  >
+                    Bounty (ETH) *
+                  </label>
+                  <input
+                    id="reward"
+                    type="number"
+                    step="0.000001"
+                    min="0.000001"
+                    bind:value={reward}
+                    placeholder="0.00"
+                    required
+                    class="cyber-input w-full py-3 text-base font-mono text-red-500"
+                  />
+                  <p class="text-[10px] text-gray-700 font-mono mt-1">
+                    Will be held in smart contract escrow
+                  </p>
+                </div>
+
+                <!-- Deadline -->
+                <div class="group">
+                  <label
+                    for="deadline"
+                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 group-focus-within:text-red-500 transition-colors"
+                  >
+                    Deadline *
+                  </label>
+                  <input
+                    id="deadline"
+                    type="datetime-local"
+                    bind:value={deadline}
+                    required
+                    class="cyber-input w-full py-3 text-xs font-mono text-gray-400"
+                  />
+                </div>
+
+                <!-- Min Trust Score -->
+                <div class="group">
+                  <label
+                    for="minTrustScore"
+                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 group-focus-within:text-red-500 transition-colors"
+                  >
+                    Min Trust Score
+                  </label>
+                  <input
+                    id="minTrustScore"
+                    type="number"
+                    min="0"
+                    max="100"
+                    bind:value={minTrustScore}
+                    placeholder="0-100"
+                    class="cyber-input w-full py-3 text-sm font-mono"
+                  />
+                  <p class="text-[10px] text-gray-700 font-mono mt-1">
+                    0 = anyone can apply, 100 = highest trust
+                  </p>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-px bg-white/10 w-full my-4"></div>
+
+                <!-- Summary rows -->
+                <div
+                  class="flex justify-between items-center text-xs font-mono"
+                >
+                  <span class="text-gray-600 uppercase">Deposit</span>
+                  <span class="text-white">{rewardNum.toFixed(5)} ETH</span>
+                </div>
+                <div
+                  class="flex justify-between items-center text-xs font-mono"
+                >
+                  <span class="text-gray-600 uppercase">Platform Fee (3%)</span>
+                  <span class="text-white">{fee.toFixed(5)} ETH</span>
+                </div>
+                <div
+                  class="flex justify-between items-center text-xs font-mono"
+                >
+                  <span class="text-gray-600 uppercase">Worker receives</span>
+                  <span class="text-green-400"
+                    >{(rewardNum * 0.97).toFixed(6)} ETH</span
+                  >
+                </div>
+
+                <!-- Divider -->
+                <div class="h-px bg-white/10 w-full my-2"></div>
+
+                <!-- Total -->
+                <div class="flex justify-between items-end text-sm font-mono">
+                  <span class="text-red-600 font-bold uppercase">Total</span>
+                  <div class="text-right">
+                    <div class="text-xl text-white font-bold">
+                      {rewardNum > 0 ? rewardNum.toFixed(5) : "0.00"}
+                    </div>
+                    <div class="text-[9px] text-gray-500 uppercase">
+                      ETH Estimated
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="space-y-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                class="w-full bg-red-600 hover:bg-red-800 text-white py-4 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {#if submitting}
+                  {#if currentStep === "preparing"}
+                    <span>Step 1/3: Preparing...</span>
+                  {:else if currentStep === "blockchain"}
+                    <span>Step 2/3: Sending to blockchain...</span>
+                  {:else if currentStep === "confirming"}
+                    <span>Step 3/3: Verifying...</span>
+                  {:else}
+                    <span>Creating Job...</span>
+                  {/if}
+                {:else}
+                  <span>Create Job &amp; Deposit {reward || "0"} ETH</span>
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    ><path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    /></svg
+                  >
+                {/if}
+              </button>
+
+              <a
+                href="/jobs"
+                class="block w-full py-3 text-[10px] text-center text-gray-600 hover:text-white font-bold uppercase tracking-widest transition-colors border border-transparent hover:border-white/10"
+              >
+                Cancel
+              </a>
+            </div>
+
+            <!-- Terms -->
+            <div class="pt-8 border-t border-white/5">
+              <p class="text-[9px] text-gray-600 leading-relaxed font-mono">
+                By publishing this task, you agree to the Agent Protocol Terms.
+                Funds will be held in escrow until completion.
+              </p>
+            </div>
+          </div>
+        </div>
+      </form>
+    {/if}
+  </div>
 </div>
+
+<style>
+  .cyber-input {
+    background-color: #050505;
+    border: none;
+    border-bottom: 1px solid #330000;
+    color: #e5e7eb;
+    transition: all 0.3s ease;
+    border-radius: 0;
+    padding-left: 0.5rem;
+    width: 100%;
+    display: block;
+  }
+  .cyber-input:focus {
+    background-color: #0a0a0a;
+    border-bottom: 1px solid #ff2a2a;
+    box-shadow: none;
+    outline: none;
+    color: #ffffff;
+  }
+  .cyber-input::placeholder {
+    color: #333;
+  }
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    opacity: 0.3;
+  }
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+</style>

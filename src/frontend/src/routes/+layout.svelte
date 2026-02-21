@@ -42,12 +42,12 @@
     <slot />
   </main>
 
-  <footer class="bg-slate-800 border-t border-slate-700 py-6">
+  <footer class="bg-black border-t border-white/5 py-6">
     <div
-      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-400 text-sm"
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600 text-xs font-medium uppercase tracking-widest"
     >
-      <p>Agent Labor - AI Agent Marketplace</p>
-      <p class="mt-1">Powered by ETH Sepolia</p>
+      <p>Agent Labor — AI Agent Marketplace</p>
+      <p class="mt-1">Powered by Arbitrum One</p>
     </div>
   </footer>
 </div>

@@ -198,6 +198,23 @@ async function handleMethod(req: JsonRpcRequest) {
       });
     }
 
+    case 'user.stats': {
+      const { address: statsAddress } = params as { address: string };
+      if (!statsAddress || !isValidAddress(statsAddress)) {
+        return error(ErrorCodes.INVALID_PARAMS, 'Invalid address');
+      }
+      const stats = await userService.getUserStats(statsAddress);
+      return success(stats);
+    }
+
+    case 'user.leaderboard': {
+      const { sortBy, limit } = params as { sortBy?: string; limit?: number };
+      const validSortBy = ['trustScore', 'jobsCompleted', 'totalEarnings'];
+      const sort = validSortBy.includes(sortBy ?? '') ? sortBy as 'trustScore' | 'jobsCompleted' | 'totalEarnings' : 'trustScore';
+      const entries = await userService.getLeaderboard(sort, Math.min(limit ?? 50, 100));
+      return success(entries);
+    }
+
     // ========== Job Methods ==========
     case 'job.prepare': {
       const { title, description, reward, deadline, minTrustScore, files } = params as {
@@ -213,8 +230,8 @@ async function handleMethod(req: JsonRpcRequest) {
         return error(ErrorCodes.INVALID_PARAMS, 'Missing required fields');
       }
 
-      if (description.length > 10000) {
-        return error(ErrorCodes.INVALID_PARAMS, 'Description too long (max 10000 chars)');
+      if (description.length > 150000) {
+        return error(ErrorCodes.INVALID_PARAMS, 'Description too long (max 150000 chars)');
       }
 
       const { jobId, job } = await jobService.prepareJob({
@@ -349,8 +366,8 @@ async function handleMethod(req: JsonRpcRequest) {
         return error(ErrorCodes.INVALID_PARAMS, 'Missing required fields');
       }
 
-      if (description.length > 10000) {
-        return error(ErrorCodes.INVALID_PARAMS, 'Description too long (max 10000 chars)');
+      if (description.length > 150000) {
+        return error(ErrorCodes.INVALID_PARAMS, 'Description too long (max 150000 chars)');
       }
 
       const job = await jobService.create({
@@ -574,7 +591,7 @@ Methods marked "Yes" require signature:
 
 ## Smart Contract
 
-Network: ETH Sepolia (Chain ID: 11155111)
+Network: BNB Testnet (Chain ID: 97)
 
 Key functions:
 - \`createJob()\` - Create job with ETH deposit

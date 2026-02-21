@@ -4,15 +4,8 @@ import { get } from 'svelte/store';
 import { authStore } from '../stores/auth';
 import { user } from '../stores';
 import { signOut } from './auth';
+import { ARBITRUM_ONE_CHAIN_ID, ARBITRUM_ONE_CONFIG } from '../config.js';
 
-const SEPOLIA_CHAIN_ID = '0xaa36a7';
-const SEPOLIA_CONFIG = {
-  chainId: SEPOLIA_CHAIN_ID,
-  chainName: 'Sepolia Testnet',
-  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-  rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
-  blockExplorerUrls: ['https://sepolia.etherscan.io'],
-};
 
 class WalletService {
   private provider: ethers.BrowserProvider | null = null;
@@ -106,13 +99,13 @@ class WalletService {
     }
   }
 
-  private async switchNetwork(): Promise<void> {
+  async switchNetwork(): Promise<void> {
     if (!this.provider) throw new Error('Provider not initialized');
     try {
-      await this.provider.send('wallet_switchEthereumChain', [{ chainId: SEPOLIA_CHAIN_ID }]);
+      await this.provider.send('wallet_switchEthereumChain', [{ chainId: ARBITRUM_ONE_CHAIN_ID }]);
     } catch (switchError: any) {
       if (switchError.code === 4902) {
-        await this.provider.send('wallet_addEthereumChain', [SEPOLIA_CONFIG]);
+        await this.provider.send('wallet_addEthereumChain', [ARBITRUM_ONE_CONFIG]);
       } else {
         throw switchError;
       }
@@ -131,6 +124,13 @@ class WalletService {
 
   getSigner(): ethers.Signer | null {
     return this.signer;
+  }
+
+  async getFreshSigner(): Promise<ethers.Signer> {
+    if (!this.provider) throw new Error('Provider not initialized');
+    const signer = await this.provider.getSigner();
+    this.signer = signer;
+    return signer;
   }
 
   getProvider(): ethers.BrowserProvider | null {
@@ -176,23 +176,42 @@ export async function createJobOnChain(
   jobId: string,
   rewardWei: string
 ): Promise<void> {
-  const signer = walletService.getSigner();
-  if (!signer) throw new Error('Wallet not connected');
+  if (!walletService.getSigner()) throw new Error('Wallet not connected');
 
-  console.log('[CreateJob] Contract:', contractAddress, 'JobId:', jobId, 'Reward:', rewardWei);
+  await walletService.switchNetwork();
+  const signer = await walletService.getFreshSigner();
+
+  const valueWei = BigInt(rewardWei);
+
+  // Check balance before sending — gives clear error instead of cryptic MetaMask -32603
+  const provider = walletService.getProvider();
+  if (provider) {
+    const address = await signer.getAddress();
+    const balance = await provider.getBalance(address);
+    if (balance < valueWei) {
+      const balanceETH = ethers.formatEther(balance);
+      const neededETH = ethers.formatEther(valueWei);
+      throw new Error(`Insufficient ETH balance. Have: ${balanceETH} ETH, need ${neededETH} ETH`);
+    }
+  }
+
+  console.log('[CreateJob] Contract:', contractAddress, 'JobId:', jobId, 'Reward (wei):', valueWei.toString());
   const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer);
-  const tx = await contract.createJob(BigInt(jobId), { value: rewardWei });
+  const tx = await contract.createJob(BigInt(jobId), { value: valueWei });
   console.log('[CreateJob] tx:', tx.hash);
   await tx.wait();
   console.log('[CreateJob] confirmed!');
 }
 
+
 export async function cancelJobOnChain(
   contractAddress: string,
-  jobId: string   // string to avoid Number overflow for large uint256
+  jobId: string
 ): Promise<string> {
-  const signer = walletService.getSigner();
-  if (!signer) throw new Error('Wallet not connected');
+  if (!walletService.getSigner()) throw new Error('Wallet not connected');
+
+  await walletService.switchNetwork();
+  const signer = await walletService.getFreshSigner();
 
   const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer);
   const tx = await contract.cancelJob(BigInt(jobId));
@@ -202,10 +221,12 @@ export async function cancelJobOnChain(
 
 export async function claimRewardOnChain(
   contractAddress: string,
-  jobId: string   // string to avoid Number overflow for large uint256
+  jobId: string
 ): Promise<string> {
-  const signer = walletService.getSigner();
-  if (!signer) throw new Error('Wallet not connected');
+  if (!walletService.getSigner()) throw new Error('Wallet not connected');
+
+  await walletService.switchNetwork();
+  const signer = await walletService.getFreshSigner();
 
   const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer);
   const tx = await contract.claimReward(BigInt(jobId));
