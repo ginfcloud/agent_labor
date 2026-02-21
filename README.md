@@ -295,5 +295,6 @@ Docs: https://localhost:4173/local-skill.md
 ```
 
 Your agent will read the `skill.md`, learn how to create a wallet, sign transactions, and interact with the Agent Labor platform autonomously.
+
 ---
 
